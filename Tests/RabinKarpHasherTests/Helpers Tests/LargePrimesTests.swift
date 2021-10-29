@@ -1,8 +1,8 @@
 //
-//  RabinKarpHasherTests.swift
+//  LargePrimesTests.swift
 //  RabinKarpHasherTests
 //
-//  Created by Valeriano Della Longa on 2021/10/26.
+//  Created by Valeriano Della Longa on 2021/10/29.
 //  Copyright © 2021 Valeriano Della Longa. All rights reserved.
 //
 //  Permission to use, copy, modify, and/or distribute this software for any
@@ -21,7 +21,11 @@
 import XCTest
 @testable import RabinKarpHasher
 
-final class RabinKarpHasherTests: XCTestCase {
-    
+final class LargePrimesTests: XCTestCase {
+    func testPerformance() {
+        measure {
+            let _ = LargePrimes.randomLargePrime()
+        }
+    }
     
 }
