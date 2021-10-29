@@ -20,16 +20,23 @@
 
 import Foundation
 
+/// A hasher which provides rolling functionality as per Robin-Karp fingerprint algorithm.
 public struct RabinKarpHasher: Equatable {
     fileprivate let _q: Int
     
     fileprivate let _rm: Int
     
+    /// The actual hash value for this hasher.
     public private(set) var hashValue: Int
     
+    /// Create a new hasher, hashing the specified bytes with the given `q` modulo value.
+    ///
+    /// - Parameter bytes:  A collection of bytes to hash.
+    /// - Parameter q:  The modulo value to use for hashing.
+    ///                 **Must be a prime number**.
+    /// - Warning: `q` must be a prime number.
     public init<C:Collection>(_ bytes: C, q: Int) where C.Iterator.Element == UInt8 {
-        precondition(q > 0, "q must be greater than 0")
-        assert(Seeder._isPrime(q), "q must be prime")
+        precondition(Seeder.isPrime(q), "q must be prime")
         
         let rm = Self._rm(for: bytes.count, q: q)
         let hashValue = Self._rollableHashValue(bytes, q: q)
@@ -37,6 +44,12 @@ public struct RabinKarpHasher: Equatable {
         self.init(hashValue: hashValue, q: q, rm: rm)
     }
     
+    /// Roll the current hash value of this hasher by removing the partial hash of
+    /// the specified `loByte`value, and inserting the partial hash of the specified `hiByte` value.
+    ///
+    /// - Parameter loByte: The lowest byte value to remove from the hash value.
+    /// - Parameter hiByte: The highest byte value to insert in this hash value.
+    /// - Complexity: O(1)
     public mutating func rollHashValue(loByte: UInt8, hiByte: UInt8) {
         hashValue = (hashValue + _q - _rm * Int(loByte) % _q) % _q
         hashValue = (hashValue * Self._r + Int(hiByte)) % _q
@@ -45,7 +58,7 @@ public struct RabinKarpHasher: Equatable {
 }
 
 extension RabinKarpHasher {
-    fileprivate static let _r = 257
+    fileprivate static let _r = 256
     
     fileprivate static func _rollableHashValue<S: Sequence>(_ bytes: S, q: Int) -> Int where S.Iterator.Element == UInt8 {
         

@@ -21,15 +21,30 @@
 import Foundation
 
 extension RabinKarpHasher {
+    /// An helper for getting randomly large prime numbers with a 10⁹ magnitude and for testing if a
+    /// number is prime.
     public enum Seeder {
         private static let _cachedPrimes = NSCache<NSNumber, NSNumber>()
         
         private static let _seedRange = 1_000_000_000..<10_000_000_000
         
-        static func _isPrime(_ n: Int) -> Bool {
-            (2...Int(Double(n).squareRoot())).lazy.filter({ n % $0 == 0 }).first == nil
+        /// Check if the specified number is prime.
+        ///
+        /// - Parameter n: An int value to check if it's a prime number.
+        /// - Returns:  A boolean value, `true` if the given number is prime,
+        ///             otherwise `false` if not.
+        /// - Complexity: O(*n*).
+        public static func isPrime(_ n: Int) -> Bool {
+            guard n >= 2 else { return false }
+            
+            return (2...Int(Double(n).squareRoot())).lazy.filter({ n % $0 == 0 }).first == nil
         }
         
+        /// Get randomly a large prime number of 10⁹ magnitude.
+        ///
+        /// - Returns: An int value of 10⁹ magnitude that is also prime.
+        /// - Complexity: O(10.000.000.000 - *n*) at worst, where *n* is the number of prime
+        ///               numbers of 10⁹ magnitude.
         public static func randomPrime() -> Int {
             while true {
                 let q = Int.random(in: _seedRange)
@@ -41,7 +56,7 @@ extension RabinKarpHasher {
                     }
                 }
                 guard
-                    _isPrime(q)
+                    isPrime(q)
                 else {
                     _cachedPrimes.setObject(false as NSNumber, forKey: q as NSNumber)
                     
