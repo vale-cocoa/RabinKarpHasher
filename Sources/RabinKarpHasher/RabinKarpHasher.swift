@@ -21,44 +21,77 @@
 import Foundation
 
 /// A hasher which provides rolling functionality as per Robin-Karp fingerprint algorithm.
-public struct RabinKarpHasher: Equatable {
-    fileprivate let _q: Int
+public struct RabinKarpHasher<C: BidirectionalCollection>: Equatable where C.Iterator.Element == UInt8 {
+    /// The bidirectional collection of bytes this rolling hasher is hashing.
+    public let bytes: C
     
-    fileprivate let _rm: Int
+    /// The modulo value this rolling hasher uses for calculating its rolling hash value.
+    public let q: Int
     
-    /// The actual hash value for this hasher.
-    public private(set) var hashValue: Int
+    /// The reminder value this rolling hasher uses for rolling its hash value.
+    public let rm: Int
     
-    /// Create a new hasher, hashing the specified bytes with the given `q` modulo value.
+    /// The range of the bytes collection the current rolling hash value is referred to.
+    public fileprivate(set) var range: Range<C.Index>
+    
+    /// The actual rolling hash value for this rolling hasher. This value is calculated
+    /// on the bytes colletion at the actual range value.
+    public private(set) var rollingHashValue: Int
+    
+    /// Create a new rolling hasher, hashing the specified bytes in the current range
+    /// adopting the given `q` modulo value.
     ///
-    /// - Parameter bytes:  A collection of bytes to hash.
+    /// - Parameter bytes:  A bidirectional collection of bytes to hash.
+    /// - Parameter range:  A range expression relative to the given bytes,
+    ///                     which would be the intial range of bytes to use from the given ones
+    ///                     for calculating the intial hash value.
     /// - Parameter q:  The modulo value to use for hashing.
-    ///                 **Must be a prime number**.
-    /// - Warning: `q` must be a prime number.
-    public init<C:Collection>(_ bytes: C, q: Int) where C.Iterator.Element == UInt8 {
-        precondition(Seeder.isPrime(q), "q must be prime")
+    ///                 **Must be greater than 0**.
+    /// - Precondition: `q` must be greater than 0.
+    /// - Warning: For better hashing quality, `q` should be a large prime number.
+    public init<R: RangeExpression>(_ bytes: C, range: R, q: Int) where R.Bound == C.Index {
+        precondition(q > 0)
         
-        let rm = Self._rm(for: bytes.count, q: q)
-        let hashValue = Self._rollableHashValue(bytes, q: q)
-        
-        self.init(hashValue: hashValue, q: q, rm: rm)
+        let r = range.relative(to: bytes)
+        self.bytes = bytes
+        self.range = r
+        self.q = q
+        let length = bytes.distance(from: r.lowerBound, to: r.upperBound)
+        self.rm = Self._rm(for: length, q: q)
+        self.rollingHashValue = Self._rollableHashValue(bytes[r], q: q)
     }
     
-    /// Roll the current hash value of this hasher by removing the partial hash of
-    /// the specified `loByte`value, and inserting the partial hash of the specified `hiByte` value.
+    /// Rolls forward the current rolling  hash value of this rolling hasher,
+    /// by advancing one position the current range for the bytes collection.
+    /// In case the current range has already reached the 
     ///
-    /// - Parameter loByte: The lowest byte value to remove from the hash value.
-    /// - Parameter hiByte: The highest byte value to insert in this hash value.
     /// - Complexity: O(1)
-    public mutating func rollHashValue(loByte: UInt8, hiByte: UInt8) {
-        hashValue = (hashValue + _q - _rm * Int(loByte) % _q) % _q
-        hashValue = (hashValue * Self._r + Int(hiByte)) % _q
+    public mutating func rollHashValue() {
+        guard
+            !range.isEmpty,
+            range.upperBound < bytes.endIndex
+        else { return }
+        
+        defer {
+            let lo = bytes.index(after: range.lowerBound)
+            let up = bytes.index(after: range.upperBound)
+            range = lo..<up
+        }
+        let loByte = bytes[range.lowerBound]
+        let hiByte = bytes[bytes.index(before: range.upperBound)]
+        rollingHashValue = (rollingHashValue + q - rm * Int(loByte) % q) % q
+        rollingHashValue = (rollingHashValue * Self._r + Int(hiByte)) % q
+    }
+    
+    // MARK: - Equatable conformance
+    public static func == (lhs: RabinKarpHasher<C>, rhs: RabinKarpHasher<C>) -> Bool {
+        lhs.rollingHashValue == rhs.rollingHashValue && lhs.rm == rhs.rm && lhs.q == rhs.q
     }
     
 }
 
 extension RabinKarpHasher {
-    fileprivate static let _r = 256
+    fileprivate static var _r: Int { 256 }
     
     fileprivate static func _rollableHashValue<S: Sequence>(_ bytes: S, q: Int) -> Int where S.Iterator.Element == UInt8 {
         
@@ -75,14 +108,6 @@ extension RabinKarpHasher {
         }
         
         return rm
-    }
-    
-    fileprivate init(hashValue: Int, q: Int, rm: Int) {
-        self.hashValue = hashValue
-        
-        self._q = q
-        
-        self._rm = rm
     }
     
 }

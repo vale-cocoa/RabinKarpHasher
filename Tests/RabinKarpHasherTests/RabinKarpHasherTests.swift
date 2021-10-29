@@ -24,7 +24,7 @@ import XCTest
 final class RabinKarpHasherTests: XCTestCase {
     func testSilly() {
         measure {
-            let _ = RabinKarpHasher.Seeder.randomPrime()
+            let _ = LargePrimes.randomLargePrime()
         }
     }
     
