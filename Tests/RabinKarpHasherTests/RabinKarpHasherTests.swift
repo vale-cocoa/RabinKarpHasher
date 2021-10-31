@@ -164,7 +164,7 @@ final class RabinKarpHasherTests: XCTestCase {
         
         var expectedRollingHashValue = sut.rollingHashValue
         expectedRollingHashValue = (expectedRollingHashValue + q - sut.rm * Int(bytes[range.lowerBound]) % q) % q
-        expectedRollingHashValue = (expectedRollingHashValue * 256 + Int(bytes[bytes.index(before: range.upperBound)])) % q
+        expectedRollingHashValue = (expectedRollingHashValue * 256 + Int(bytes[range.upperBound])) % q
         
         sut.rollHashValue()
         XCTAssertEqual(sut.rollingHashValue, expectedRollingHashValue)

@@ -21,7 +21,7 @@
 import Foundation
 
 /// A hasher which provides rolling functionality as per Robin-Karp fingerprint algorithm.
-public struct RabinKarpHasher<C: BidirectionalCollection> where C.Iterator.Element == UInt8 {
+public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     /// The bidirectional collection of bytes this rolling hasher is hashing.
     public let bytes: C
     
@@ -32,11 +32,19 @@ public struct RabinKarpHasher<C: BidirectionalCollection> where C.Iterator.Eleme
     public let rm: Int
     
     /// The range of the bytes collection the current rolling hash value is referred to.
-    public private(set) var range: Range<C.Index>
+    public var range: Range<C.Index> {
+        let upperBound = bytes.index(_lo, offsetBy: _length, limitedBy: bytes.endIndex) ?? bytes.endIndex
+        
+        return _lo..<upperBound
+    }
     
     /// The actual rolling hash value for this rolling hasher. This value is calculated
     /// on the bytes colletion at the actual range value.
     public private(set) var rollingHashValue: Int
+    
+    fileprivate var _lo: C.Index
+    
+    fileprivate var _length: Int
     
     /// Create a new rolling hasher, hashing the specified bytes in the current range
     /// adopting the given `q` modulo value.
@@ -54,10 +62,10 @@ public struct RabinKarpHasher<C: BidirectionalCollection> where C.Iterator.Eleme
         
         let r = range.relative(to: bytes)
         self.bytes = bytes
-        self.range = r
         self.q = q
-        let length = bytes.distance(from: r.lowerBound, to: r.upperBound)
-        self.rm = Self._rm(for: length, q: q)
+        self._length = bytes.distance(from: r.lowerBound, to: r.upperBound)
+        self._lo = r.lowerBound
+        self.rm = Self._rm(for: self._length, q: q)
         self.rollingHashValue = Self._rollableHashValue(bytes[r], q: q)
     }
     
@@ -68,19 +76,18 @@ public struct RabinKarpHasher<C: BidirectionalCollection> where C.Iterator.Eleme
     /// - Complexity: O(1)
     public mutating func rollHashValue() {
         guard
-            !range.isEmpty,
-            range.upperBound < bytes.endIndex
+            _length > 0,
+            let _hi = bytes.index(_lo, offsetBy: _length, limitedBy: bytes.endIndex),
+            _hi < bytes.endIndex
         else { return }
         
         defer {
-            let lo = bytes.index(after: range.lowerBound)
-            let up = bytes.index(after: range.upperBound)
-            range = lo..<up
+            bytes.formIndex(after: &_lo)
         }
-        let loByte = bytes[range.lowerBound]
-        let hiByte = bytes[bytes.index(before: range.upperBound)]
-        rollingHashValue = (rollingHashValue + q - rm * Int(loByte) % q) % q
-        rollingHashValue = (rollingHashValue * Self._r + Int(hiByte)) % q
+        let loValue = Int(bytes[_lo])
+        let hiValue = Int(bytes[_hi])
+        rollingHashValue = (rollingHashValue + q - rm * loValue % q) % q
+        rollingHashValue = (rollingHashValue * Self._r + hiValue) % q
     }
     
     /// Check if two rolling hasher are comaprable by their rolling hash values.
