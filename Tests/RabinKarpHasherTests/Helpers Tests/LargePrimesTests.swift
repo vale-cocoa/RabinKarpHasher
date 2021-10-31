@@ -22,6 +22,26 @@ import XCTest
 @testable import RabinKarpHasher
 
 final class LargePrimesTests: XCTestCase {
+    func testIsPrime_whenIsNotPrime_thenReturnsFalse() {
+        XCTAssertFalse(LargePrimes.isPrime(9))
+    }
+    
+    func testIsPrime_whenIsPrime_thenReturnsTrue() {
+        XCTAssertTrue(LargePrimes.isPrime(17))
+    }
+    
+    func testRandomLargePrime() {
+        let q = LargePrimes.randomLargePrime()
+        XCTAssertTrue(1_000_000_000..<10_000_000_000 ~= q, "\(q) is not of 10⁹ magnitude")
+        
+        let l = Int(Double(q).squareRoot())
+        for div in 2...l where q % div == 0 {
+            XCTFail("\(q) is not prime, cause is divisible by \(div)")
+            
+            return
+        }
+    }
+    
     func testPerformance() {
         measure {
             let _ = LargePrimes.randomLargePrime()

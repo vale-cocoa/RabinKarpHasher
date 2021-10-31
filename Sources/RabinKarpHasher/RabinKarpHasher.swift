@@ -21,7 +21,7 @@
 import Foundation
 
 /// A hasher which provides rolling functionality as per Robin-Karp fingerprint algorithm.
-public struct RabinKarpHasher<C: BidirectionalCollection>: Equatable where C.Iterator.Element == UInt8 {
+public struct RabinKarpHasher<C: BidirectionalCollection> where C.Iterator.Element == UInt8 {
     /// The bidirectional collection of bytes this rolling hasher is hashing.
     public let bytes: C
     
@@ -32,7 +32,7 @@ public struct RabinKarpHasher<C: BidirectionalCollection>: Equatable where C.Ite
     public let rm: Int
     
     /// The range of the bytes collection the current rolling hash value is referred to.
-    public fileprivate(set) var range: Range<C.Index>
+    public private(set) var range: Range<C.Index>
     
     /// The actual rolling hash value for this rolling hasher. This value is calculated
     /// on the bytes colletion at the actual range value.
@@ -83,22 +83,36 @@ public struct RabinKarpHasher<C: BidirectionalCollection>: Equatable where C.Ite
         rollingHashValue = (rollingHashValue * Self._r + Int(hiByte)) % q
     }
     
-    // MARK: - Equatable conformance
-    public static func == (lhs: RabinKarpHasher<C>, rhs: RabinKarpHasher<C>) -> Bool {
-        lhs.rollingHashValue == rhs.rollingHashValue && lhs.rm == rhs.rm && lhs.q == rhs.q
+    /// Check if two rolling hasher are comaprable by their rolling hash values.
+    ///
+    /// It make sense to compare two rolling hasher's rolling hash values only when both of them
+    /// share the same `q` modulo value and calculate their rolling hash values on the same amount of bytes.
+    ///  - Parameter lhs: A rolling hasher instance.
+    ///  - Parameter rhs: A rolling hasher instance.
+    ///  - Returns: A bool value: `true` when the two specified rolling hasher's rolling hash values can be
+    ///             compared —that is when both rolling hashers shares the same `q` modulo value and
+    ///             calculates their rolling hash value on the same amount of bytes—, `false` otherwise.
+    /// - Complexity: O(1)
+    @inlinable
+    public static func areComparableByRollingHashValue(lhs: Self, rhs: Self) -> Bool {
+        lhs.q == rhs.q && lhs.rm == rhs.rm
     }
     
 }
 
+// MARK: - Helpers
 extension RabinKarpHasher {
+    @inline(__always)
     fileprivate static var _r: Int { 256 }
     
+    @inline(__always)
     fileprivate static func _rollableHashValue<S: Sequence>(_ bytes: S, q: Int) -> Int where S.Iterator.Element == UInt8 {
         
         return bytes
             .reduce(0, { (_r * $0 + Int($1)) % q })
     }
     
+    @inline(__always)
     fileprivate static func _rm(for lenght: Int, q: Int) -> Int {
         guard lenght > 0 else { return 0 }
         

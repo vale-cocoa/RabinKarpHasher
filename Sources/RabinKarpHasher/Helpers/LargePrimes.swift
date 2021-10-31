@@ -20,10 +20,15 @@
 
 import Foundation
 
-/// An helper for getting randomly large prime numbers with a 10⁹ magnitude,
-/// and for testing if an int value is a prime.
+/// Utilityr to get randomly generated large prime numbers with a 10⁹ magnitude,
+/// and also for testing if an int value is a prime number.
 public enum LargePrimes {
-    private static let _cache = NSCache<NSNumber, NSNumber>()
+    private static let _cache: NSCache<NSNumber, NSNumber> = {
+        let cache = NSCache<NSNumber, NSNumber>()
+        cache.name = "com.vdl.largePrimes"
+        
+        return cache
+    }()
     
     private static let _range = 1_000_000_000..<10_000_000_000
     
