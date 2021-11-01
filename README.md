@@ -1,3 +1,3 @@
 # RabinKarpHasher
 
-A description of this package.
+A hasher which provides rolling functionality as per Robin-Karp fingerprint algorithm.
