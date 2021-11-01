@@ -32,11 +32,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     public let rm: Int
     
     /// The range of the bytes collection the current rolling hash value is referred to.
-    public var range: Range<C.Index> {
-        let upperBound = bytes.index(_lo, offsetBy: _length, limitedBy: bytes.endIndex) ?? bytes.endIndex
-        
-        return _lo..<upperBound
-    }
+    public var range: Range<C.Index> { _lo..<_hi }
     
     /// The actual rolling hash value for this rolling hasher. This value is calculated
     /// on the bytes colletion at the actual range value.
@@ -44,7 +40,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     
     fileprivate var _lo: C.Index
     
-    fileprivate var _length: Int
+    fileprivate var _hi: C.Index
     
     /// Create a new rolling hasher, hashing the specified bytes in the current range
     /// adopting the given `q` modulo value.
@@ -63,9 +59,10 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
         let r = range.relative(to: bytes)
         self.bytes = bytes
         self.q = q
-        self._length = bytes.distance(from: r.lowerBound, to: r.upperBound)
+        let length = bytes.distance(from: r.lowerBound, to: r.upperBound)
         self._lo = r.lowerBound
-        self.rm = Self._rm(for: self._length, q: q)
+        self._hi = r.upperBound
+        self.rm = Self._rm(for: length, q: q)
         self.rollingHashValue = Self._rollableHashValue(bytes[r], q: q)
     }
     
@@ -76,14 +73,15 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     /// - Complexity: O(1)
     public mutating func rollHashValue() {
         guard
-            _length > 0,
-            let _hi = bytes.index(_lo, offsetBy: _length, limitedBy: bytes.endIndex),
+            !range.isEmpty,
             _hi < bytes.endIndex
         else { return }
         
         defer {
             bytes.formIndex(after: &_lo)
+            bytes.formIndex(after: &_hi)
         }
+        
         let loValue = Int(bytes[_lo])
         let hiValue = Int(bytes[_hi])
         rollingHashValue = (rollingHashValue + q - rm * loValue % q) % q
