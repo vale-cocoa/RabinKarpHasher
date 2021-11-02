@@ -172,31 +172,36 @@ final class RabinKarpHasherTests: XCTestCase {
         XCTAssertEqual(sut.range.upperBound, bytes.index(after: range.upperBound))
     }
     
-    // MARK: - areComparableByRollingHashValues(lhs:rhs:) tests
-    func testAreComparableByRollingHashValues_whenQValuesAreDifferent_thenReturnsFalse() {
-        let q1 = 2
-        let q2 = 7
-        let bytes = "needle"
-        let lhs = RabinKarpHasher(bytes.utf8, range: bytes.startIndex..., q: q1)
-        let rhs = RabinKarpHasher(bytes.utf8, range: bytes.startIndex..., q: q2)
-        XCTAssertFalse(RabinKarpHasher<String.UTF8View>.areComparableByRollingHashValue(lhs: lhs, rhs: rhs))
+    // MARK: - hasSameHash(of:) tests
+    func testHasSameHashOf_whenOtherHasDifferentRollingHashValue_thenReturnsFalse() {
+        whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex()
+        let length = sut.bytes.distance(from: sut.range.lowerBound, to: sut.range.upperBound)
+        let otherCollection = Array(bytes)
+        let otherLo = otherCollection.index(after: otherCollection.startIndex)
+        let otherUp = otherCollection.index(otherLo, offsetBy: length)
+        let other = RabinKarpHasher(otherCollection, range: otherLo..<otherUp, q: sut.q)
+        XCTAssertNotEqual(sut.rollingHashValue, other.rollingHashValue)
+        XCTAssertEqual(sut.rm, other.rm)
+        XCTAssertFalse(sut.hasSameHash(of: other))
     }
     
-    func testAreComparableByRollingHashValues_whenQValuesAreSameAndRMValuesAreDifferent_thenReturnsFalse() {
-        let q = LargePrimes.randomLargePrime()
-        let bytes = "needle"
-        let lhs = RabinKarpHasher(bytes.utf8, range: bytes.startIndex..., q: q)
-        let rhs = RabinKarpHasher(bytes.utf8, range: bytes.index(after: bytes.startIndex)..., q: q)
-        XCTAssertFalse(RabinKarpHasher<String.UTF8View>.areComparableByRollingHashValue(lhs: lhs, rhs: rhs))
+    func testHasSameHashOf_whenOtherHasDifferentRMValue_thenReturnsFalse() {
+        whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex()
+        let otherCollection = Array(bytes)
+        let other = RabinKarpHasher(otherCollection, range: otherCollection.startIndex..., q: sut.q)
+        XCTAssertNotEqual(sut.rm, other.rm)
+        XCTAssertFalse(sut.hasSameHash(of: other))
     }
     
-    func testAreComparableByRollingHashValues_whenQValuesAreSameAndRMValuesAreSame_thenReturnsTrue() {
-        let q = LargePrimes.randomLargePrime()
-        let bytes1 = "needle"
-        let bytes2 = "haystack"
-        let lhs = RabinKarpHasher(bytes1.utf8, range: bytes1.startIndex..., q: q)
-        let rhs = RabinKarpHasher(bytes2.utf8, range: bytes2.startIndex..<(bytes2.index(bytes2.startIndex, offsetBy: bytes1.count)), q: q)
-        XCTAssertTrue(RabinKarpHasher<String.UTF8View>.areComparableByRollingHashValue(lhs: lhs, rhs: rhs))
+    func testHasSameHashOf_whenOtherHasSameRollingHashValueAndSameRMValue_thenReturnsTrue() {
+        whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex()
+        let length = sut.bytes.distance(from: sut.range.lowerBound, to: sut.range.upperBound)
+        let otherCollection = Array(bytes)
+        let otherUp = otherCollection.index(otherCollection.startIndex, offsetBy: length)
+        let other = RabinKarpHasher(otherCollection, range: otherCollection.startIndex..<otherUp, q: sut.q)
+        XCTAssertEqual(sut.rm, other.rm)
+        XCTAssertEqual(sut.rollingHashValue, other.rollingHashValue)
+        XCTAssertTrue(sut.hasSameHash(of: other))
     }
     
 }

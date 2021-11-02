@@ -62,7 +62,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
         let length = bytes.distance(from: r.lowerBound, to: r.upperBound)
         self._lo = r.lowerBound
         self._hi = r.upperBound
-        self.rm = Self._rm(for: length, q: q)
+        self.rm = Self._remainder(of: length, q: q)
         self.rollingHashValue = Self._rollableHashValue(bytes[r], q: q)
     }
     
@@ -86,7 +86,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
             let loValue = Int(bytes[_lo])
             let hiValue = Int(bytes[_hi])
             rollingHashValue = (rollingHashValue + q - rm * loValue % q) % q
-            rollingHashValue = (rollingHashValue * Self._r + hiValue) % q
+            rollingHashValue = (rollingHashValue * Self._radix + hiValue) % q
             bytes.formIndex(after: &_lo)
             bytes.formIndex(after: &_hi)
         }
@@ -94,19 +94,18 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
         return true
     }
     
-    /// Check if two rolling hasher are comaprable by their rolling hash values.
+    /// Checks if this rolling hash has the same hash of another one.
     ///
-    /// It make sense to compare two rolling hasher's rolling hash values only when both of them
-    /// share the same `q` modulo value and calculate their rolling hash values on the same amount of bytes.
-    ///  - Parameter lhs: A rolling hasher instance.
-    ///  - Parameter rhs: A rolling hasher instance.
-    ///  - Returns: A bool value: `true` when the two specified rolling hasher's rolling hash values can be
-    ///             compared —that is when both rolling hashers shares the same `q` modulo value and
-    ///             calculates their rolling hash value on the same amount of bytes—, `false` otherwise.
+    /// For two rolling hashers to have the same hash they must both have the same rolling hash values,
+    /// as well as the same reminder `rm` value and modulo `q` value.
+    ///
+    /// - Parameter other: Another rolling hasher of type `T`.
+    /// - Returns:  A boolean value, `true` if the rolling hasher specified as `other`
+    ///             has the same `rollingHashValue`, modulo `q` value
+    ///             and reminder `rm` value of this one; `false` otherwise.
     /// - Complexity: O(1)
-    @inlinable
-    public static func areComparableByRollingHashValue(lhs: Self, rhs: Self) -> Bool {
-        lhs.q == rhs.q && lhs.rm == rhs.rm
+    public func hasSameHash<T>(of other: RabinKarpHasher<T>) -> Bool {
+        other.rollingHashValue == rollingHashValue && other.q == q && other.rm == rm
     }
     
 }
@@ -114,22 +113,22 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
 // MARK: - Helpers
 extension RabinKarpHasher {
     @inline(__always)
-    fileprivate static var _r: Int { 256 }
+    fileprivate static var _radix: Int { 256 }
     
     @inline(__always)
     fileprivate static func _rollableHashValue<S: Sequence>(_ bytes: S, q: Int) -> Int where S.Iterator.Element == UInt8 {
         
         return bytes
-            .reduce(0, { (_r * $0 + Int($1)) % q })
+            .reduce(0, { (_radix * $0 + Int($1)) % q })
     }
     
     @inline(__always)
-    fileprivate static func _rm(for lenght: Int, q: Int) -> Int {
+    fileprivate static func _remainder(of lenght: Int, q: Int) -> Int {
         guard lenght > 0 else { return 0 }
         
         var rm = 1
         for _ in 1..<lenght {
-            rm = (rm * _r) % q
+            rm = (rm * _radix) % q
         }
         
         return rm
