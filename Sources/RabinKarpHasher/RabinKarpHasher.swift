@@ -70,22 +70,28 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     /// by advancing one position the current range for the bytes collection.
     /// In case the current range has already reached the 
     ///
+    /// - Returns:  A boolean value, `true` when the rolling of the hash value effectively took place,
+    ///             otherwise `false`.
+    /// - Note: The rolling hash value can be effetively rolled only if the current `range` of this rolling hasher
+    ///         is not empty and has not yet reached the `endIndex` of the `bytes` collection.
     /// - Complexity: O(1)
-    public mutating func rollHashValue() {
+    @discardableResult
+    public mutating func rollHashValue() -> Bool {
         guard
             !range.isEmpty,
             _hi < bytes.endIndex
-        else { return }
+        else { return false }
         
         defer {
+            let loValue = Int(bytes[_lo])
+            let hiValue = Int(bytes[_hi])
+            rollingHashValue = (rollingHashValue + q - rm * loValue % q) % q
+            rollingHashValue = (rollingHashValue * Self._r + hiValue) % q
             bytes.formIndex(after: &_lo)
             bytes.formIndex(after: &_hi)
         }
         
-        let loValue = Int(bytes[_lo])
-        let hiValue = Int(bytes[_hi])
-        rollingHashValue = (rollingHashValue + q - rm * loValue % q) % q
-        rollingHashValue = (rollingHashValue * Self._r + hiValue) % q
+        return true
     }
     
     /// Check if two rolling hasher are comaprable by their rolling hash values.

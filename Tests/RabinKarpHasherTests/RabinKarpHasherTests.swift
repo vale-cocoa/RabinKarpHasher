@@ -124,49 +124,49 @@ final class RabinKarpHasherTests: XCTestCase {
     }
     
     // MARK: - rollHashValue() tests
-    func testRollHashValue_whenBytesIsEmpty_thenRangeAndRollingHashValueDontChange() {
+    func testRollHashValue_whenBytesIsEmpty_thenReturnsFalseAndRangeAndRollingHashValueDontChange() {
         whenBytesIsEmpty()
         let prevHashValue = sut.rollingHashValue
         let prevRange = sut.range
         
-        sut.rollHashValue()
+        XCTAssertFalse(sut.rollHashValue())
         XCTAssertEqual(sut.rollingHashValue, prevHashValue)
         XCTAssertEqual(sut.range.lowerBound, prevRange.lowerBound)
         XCTAssertEqual(sut.range.upperBound, prevRange.upperBound)
     }
     
-    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsEmpty_thenRangeAndRollingHashValueDontChange() {
+    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsEmpty_thenReturnsFalseAndRangeAndRollingHashValueDontChange() {
         whenBytesIsNotEmptyAndRangeIsEmpty()
         
         let prevHashValue = sut.rollingHashValue
         let prevRange = sut.range
         
-        sut.rollHashValue()
+        XCTAssertFalse(sut.rollHashValue())
         XCTAssertEqual(sut.rollingHashValue, prevHashValue)
         XCTAssertEqual(sut.range.lowerBound, prevRange.lowerBound)
         XCTAssertEqual(sut.range.upperBound, prevRange.upperBound)
     }
     
-    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsBytesEndIndex_thenRangeAndRollingHashValueDontChange() {
+    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsBytesEndIndex_thenReturnsFalseAndRangeAndRollingHashValueDontChange() {
         whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsBytesEndIndex()
         
         let prevHashValue = sut.rollingHashValue
         let prevRange = sut.range
         
-        sut.rollHashValue()
+        XCTAssertFalse(sut.rollHashValue())
         XCTAssertEqual(sut.rollingHashValue, prevHashValue)
         XCTAssertEqual(sut.range.lowerBound, prevRange.lowerBound)
         XCTAssertEqual(sut.range.upperBound, prevRange.upperBound)
     }
     
-    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex_thenRangeAdvancesByOneAndRollingHashValueRollsOneByteAfter() {
+    func testRollHashValue_whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex_thenReturnsTrueAndRangeAdvancesByOneAndRollingHashValueRollsOneByteAfter() {
         whenBytesIsNotEmptyAndRangeIsNotEmptyAndRangeUpperBoundIsLessThanBytesEndIndex()
         
         var expectedRollingHashValue = sut.rollingHashValue
         expectedRollingHashValue = (expectedRollingHashValue + q - sut.rm * Int(bytes[range.lowerBound]) % q) % q
         expectedRollingHashValue = (expectedRollingHashValue * 256 + Int(bytes[range.upperBound])) % q
         
-        sut.rollHashValue()
+        XCTAssertTrue(sut.rollHashValue())
         XCTAssertEqual(sut.rollingHashValue, expectedRollingHashValue)
         XCTAssertEqual(sut.range.lowerBound, bytes.index(after: range.lowerBound))
         XCTAssertEqual(sut.range.upperBound, bytes.index(after: range.upperBound))
