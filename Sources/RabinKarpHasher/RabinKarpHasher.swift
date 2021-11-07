@@ -75,6 +75,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     /// - Note: The rolling hash value can be effetively rolled only if the current `range` of this rolling hasher
     ///         is not empty and has not yet reached the `endIndex` of the `bytes` collection.
     /// - Complexity: O(1)
+    @inline(__always)
     @discardableResult
     public mutating func rollHashValue() -> Bool {
         guard
@@ -104,6 +105,7 @@ public struct RabinKarpHasher<C: Collection> where C.Iterator.Element == UInt8 {
     ///             has the same `rollingHashValue`, modulo `q` value
     ///             and reminder `rm` value of this one; `false` otherwise.
     /// - Complexity: O(1)
+    @inlinable
     public func hasSameHash<T>(of other: RabinKarpHasher<T>) -> Bool {
         other.rollingHashValue == rollingHashValue && other.q == q && other.rm == rm
     }
